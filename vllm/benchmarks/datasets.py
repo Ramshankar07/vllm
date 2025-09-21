@@ -1009,6 +1009,41 @@ class ShareGPTDataset(BenchmarkDataset):
         return samples
 
 
+def infer_dataset_name_from_path(dataset_path: str) -> str:
+    """
+    Infer dataset name from the dataset path.
+    
+    Args:
+        dataset_path: Path to the dataset file
+        
+    Returns:
+        Inferred dataset name
+        
+    Raises:
+        ValueError: If dataset type cannot be inferred from path
+    """
+    if not dataset_path:
+        return 'random'
+    
+    path_lower = dataset_path.lower()
+    
+    # Check for known dataset patterns
+    if 'sharegpt' in path_lower or 'vicuna' in path_lower:
+        return 'sharegpt'
+    elif 'sonnet' in path_lower:
+        return 'sonnet'
+    elif 'burstgpt' in path_lower:
+        return 'burstgpt'
+    elif 'spec_bench' in path_lower or 'spec-bench' in path_lower:
+        return 'spec_bench'
+    else:
+        raise ValueError(
+            f"Cannot infer dataset type from path: {dataset_path}. "
+            "Please specify the appropriate --dataset-name (e.g., "
+            "'sharegpt', 'custom', 'sonnet') for your dataset file."
+        )
+
+
 class _ValidateDatasetArgs(argparse.Action):
     """Argparse action to validate dataset name and path compatibility."""
     def __call__(self, parser, namespace, values, option_string=None):
@@ -1018,9 +1053,14 @@ class _ValidateDatasetArgs(argparse.Action):
         dataset_name = getattr(namespace, 'dataset_name', 'random')
         dataset_path = getattr(namespace, 'dataset_path', None)
 
-        # Validate the combination
-        if dataset_name == "random" and dataset_path is not None:
-            parser.error(
+        # If dataset_path is provided but dataset_name is still 'random' (default),
+        # automatically infer the dataset type from the path
+        if dataset_path is not None and dataset_name == 'random':
+            try:
+                inferred_name = infer_dataset_name_from_path(dataset_path)
+                setattr(namespace, 'dataset_name', inferred_name)
+            except ValueError as e:
+                parser.error(
                 "Cannot use 'random' dataset with --dataset-path. "
                 "Please specify the appropriate --dataset-name (e.g., "
                 "'sharegpt', 'custom', 'sonnet') for your dataset file: "
