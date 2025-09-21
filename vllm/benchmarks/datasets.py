@@ -1064,7 +1064,7 @@ class _ValidateDatasetArgs(argparse.Action):
                 "Cannot use 'random' dataset with --dataset-path. "
                 "Please specify the appropriate --dataset-name (e.g., "
                 "'sharegpt', 'custom', 'sonnet') for your dataset file: "
-                f"{dataset_path}"
+                f"{dataset_path} and error: {str(e)}"
             )
 
 
